@@ -1,0 +1,928 @@
+<title>TuzataMan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="core.js"></script>
+<style>
+/* Layout: bitta ustunli mobil ilova — tepada sarlavha, o'rtada ekran, pastda navigatsiya va savat paneli */
+:root {
+  --bg: #f2f5f6; --surface: #ffffff; --surface-2: #e7eef0; --fg: #14232b; --muted: #5d6f78; --line: #d5e0e3;
+  --brand: #0f6f7c;          /* Samarqand moviy */
+  --brand-ink: #ffffff;
+  --accent: #e8a33a;         /* zaferan oltin */
+  --accent-ink: #2a1a00;
+  --ok: #1f8a4c; --warn: #b26a00; --bad: #c0392b;
+  --display: "Unbounded", "Onest", system-ui, sans-serif;
+  --body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d171b; --surface: #15232a; --surface-2: #1d2f37; --fg: #e6f0f2; --muted: #93a7af; --line: #26404a;
+  --brand: #3fb3c2; --brand-ink: #04191d; --accent: #f0b456; --accent-ink: #2a1a00;
+  --ok: #4cc27f; --warn: #f0b456; --bad: #ef7466; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0d171b; --surface: #15232a; --surface-2: #1d2f37; --fg: #e6f0f2; --muted: #93a7af; --line: #26404a;
+  --brand: #3fb3c2; --brand-ink: #04191d; --accent: #f0b456; --accent-ink: #2a1a00;
+  --ok: #4cc27f; --warn: #f0b456; --bad: #ef7466; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); -webkit-tap-highlight-color: transparent; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.wrap { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 10px; padding-block: 10px; }
+.logo { display: flex; align-items: center; gap: 8px; font: 700 17px var(--display); letter-spacing: -.01em; }
+.logo svg { width: 30px; height: 30px; flex: none; }
+.logo b { color: var(--brand); font-weight: 700; }
+.spacer { flex: 1; }
+.mode-pill { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.icon-btn { border: 0; background: var(--surface-2); width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+
+main { padding-block: 16px 150px; }
+h1 { font: 700 22px/1.2 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.015em; }
+h2 { font: 600 17px/1.25 var(--body); margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+
+/* Bosh sahifa */
+.hero { background: var(--brand); color: var(--brand-ink); border-radius: var(--r); padding: 18px; position: relative; overflow: hidden; }
+.hero h1 { color: inherit; font-size: 21px; max-width: 17ch; }
+.hero p { margin: 8px 0 0; opacity: .9; max-width: 30ch; }
+.hero .girih { position: absolute; right: -18px; top: -18px; width: 140px; height: 140px; opacity: .22; }
+.hero .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.hero .chips span { background: rgba(255,255,255,.16); padding: 4px 10px; border-radius: 99px; font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cat { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 14px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-weight: 600; font-size: 13.5px; }
+.cat .ico { font-size: 28px; width: 52px; height: 52px; display: grid; place-items: center; background: var(--surface-2); border-radius: 50%; }
+.cat small { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+/* Xizmatlar ro'yxati */
+.svc { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.svc:last-child { border-bottom: 0; }
+.svc .t { flex: 1; min-width: 0; }
+.svc .p { color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.qty { display: flex; align-items: center; gap: 6px; }
+.qty button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 18px; line-height: 1; }
+.qty .add { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.qty span { min-width: 18px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+.back { border: 0; background: none; color: var(--brand); font-weight: 600; padding: 0; margin-bottom: 8px; }
+
+/* Forma */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 11px 12px; min-width: 0; }
+.input:focus { border-color: var(--brand); outline: none; }
+textarea.input { resize: vertical; min-height: 64px; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 600; background: var(--surface-2); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.brand { background: var(--brand); color: var(--brand-ink); }
+.btn.ghost { background: transparent; border: 1px solid var(--line); }
+.btn.small { padding: 7px 12px; font-size: 13.5px; border-radius: 10px; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: .5; cursor: default; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: 12px; }
+.seg button { border: 0; background: transparent; padding: 10px 6px; border-radius: 9px; font-weight: 600; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.chips-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 7px 12px; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.addr-box { position: relative; }
+.suggest { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; z-index: 6; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+.suggest button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.suggest button:last-child { border-bottom: 0; }
+.suggest small { color: var(--muted); display: block; }
+.addr-details { font-size: 13.5px; color: var(--muted); }
+.pay-opt { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.pay-opt input { accent-color: var(--brand); width: 18px; height: 18px; }
+.sum-line { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.sum-line.total { font-weight: 700; font-size: 17px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.note { font-size: 13px; color: var(--muted); }
+
+/* Buyurtmalar */
+.order { display: flex; flex-direction: column; gap: 8px; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.st-new { color: var(--warn); } .st-accepted, .st-arrived { color: var(--brand); } .st-done { color: var(--accent); } .st-confirmed { color: var(--ok); } .st-cancelled { color: var(--bad); }
+.status span { color: var(--fg); }
+.stars { display: flex; gap: 4px; }
+.stars button { border: 0; background: var(--surface-2); border-radius: 8px; width: 40px; height: 36px; font-size: 18px; }
+.stars button[aria-pressed="true"] { background: var(--accent); }
+
+/* Profil */
+.prof-head { display: flex; gap: 14px; align-items: center; }
+.avatar { width: 58px; height: 58px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; font: 700 22px var(--display); flex: none; }
+.verified { color: var(--brand); font-size: 13px; font-weight: 600; }
+.quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.quick button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg); }
+.quick span { width: 50px; height: 50px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 21px; }
+.list-item { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.list-item:last-child { border-bottom: 0; }
+.list-item .t { flex: 1; min-width: 0; }
+
+/* Usta hamyoni */
+.wallet { background: linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 70%, #000)); color: var(--brand-ink); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 4px; }
+.wallet .big { font: 700 28px var(--display); font-variant-numeric: tabular-nums; }
+.wallet .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.wallet .meta div { background: rgba(255,255,255,.14); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+.wallet .meta b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.ledger { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.plus { color: var(--ok); font-weight: 600; } .minus { color: var(--bad); font-weight: 600; }
+
+/* Pastki panellar */
+.cartbar { position: fixed; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); z-index: 7; }
+.cartbar .wrap { padding-block: 8px; }
+.cartbar button { width: 100%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 8; padding-bottom: env(safe-area-inset-bottom, 0px); }
+nav.tabs .wrap { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+nav.tabs a { text-decoration: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; padding-block: 8px; font-size: 12px; font-weight: 600; }
+nav.tabs a .i { font-size: 20px; line-height: 1; }
+nav.tabs a[aria-current="page"] { color: var(--brand); }
+
+/* Modal oynalar */
+.sheet-bg { position: fixed; inset: 0; background: rgba(5,15,20,.45); z-index: 20; display: flex; align-items: flex-end; }
+.sheet { background: var(--bg); width: 100%; max-width: 560px; margin: 0 auto; border-radius: 18px 18px 0 0; max-height: 92%; overflow: auto; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet .grip { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: -4px auto 12px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mapwrap { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; }
+#map { flex: 1; background: repeating-linear-gradient(0deg, var(--surface-2) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, var(--surface-2) 0 1px, transparent 1px 40px), var(--surface); }
+.pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); z-index: 500; pointer-events: none; transition: transform .15s; }
+.pin.lift { transform: translate(-50%, -115%); }
+.map-top { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); z-index: 600; }
+.map-me { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: 170px; z-index: 600; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,.2); font-size: 20px; }
+.map-bottom { background: var(--surface); padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); }
+.toast-box { position: fixed; left: 0; right: 0; top: calc(64px + env(safe-area-inset-top, 0px)); z-index: 40; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-inline: 16px; }
+.toast { background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 520px; box-shadow: 0 6px 20px rgba(0,0,0,.2); animation: tin .2s ease-out; }
+.toast.bot { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-left: 4px solid var(--brand); }
+@keyframes tin { from { transform: translateY(-6px); opacity: .4; } }
+.empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+.demo-banner { background: color-mix(in srgb, var(--accent) 20%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (max-width: 360px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two { grid-template-columns: 1fr; } }
+
+/* Leaflet'ning zarur uslublari (CDN uslub fayli o'rniga) */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;touch-action:none;font:inherit}
+.leaflet-tile{user-select:none;-webkit-user-drag:none;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}
+.leaflet-container img.leaflet-tile{max-width:none!important;max-height:none!important}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-marker-pane{z-index:600}
+.leaflet-control-container .leaflet-top,.leaflet-control-container .leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-bottom{bottom:0}.leaflet-right{right:0}.leaflet-control{pointer-events:auto;position:relative;clear:both}
+.leaflet-control-attribution{background:rgba(255,255,255,.8);color:#333;font-size:10px;padding:0 5px}
+.leaflet-control-attribution a{color:#0f6f7c}
+.leaflet-fade-anim .leaflet-tile{will-change:opacity}.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="logo" aria-label="TuzataMan">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="var(--brand)"/><path d="M11 30V19c0-5 4-9 9-9s9 4 9 9v11" fill="none" stroke="var(--brand-ink)" stroke-width="3.2" stroke-linecap="round"/><path d="M20 15v15M15.5 15h9" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round"/></svg>
+    <span>Tuzata<b>Man</b></span>
+  </div>
+  <div class="spacer"></div>
+  <span class="mode-pill" id="modePill" hidden>Demo</span>
+  <button class="icon-btn" id="profBtn" aria-label="Profil">👤</button>
+</div></header>
+
+<main class="wrap" id="view"></main>
+
+<div class="cartbar" id="cartbar" hidden><div class="wrap"><button class="btn primary" id="cartBtn"><span id="cartCount"></span><span id="cartSum"></span></button></div></div>
+
+<nav class="tabs"><div class="wrap" id="tabs">
+  <a href="#home" data-tab="home"><span class="i">🛠</span>Xizmatlar</a>
+  <a href="#orders" data-tab="orders"><span class="i">📋</span>Buyurtmalar</a>
+  <a href="#master" data-tab="master" id="masterTab"><span class="i">👷</span>Usta</a>
+  <a href="#profile" data-tab="profile"><span class="i">👤</span>Profil</a>
+</div></nav>
+
+<div class="toast-box" id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ===================== Sozlama ===================== */
+// Mini App server bilan bir manzilda turadi. Alohida joylashtirilsa, shu yerga server manzilini yozing.
+const API_BASE = '';
+const SUPPORT = 'uboltabaev';             // yordam xizmati Telegram profili
+const TASHKENT = [41.3111, 69.2797];
+const DAYS = ['Bugun', 'Ertaga', 'Indinga'];
+const SLOTS = ['09:00–11:00', '11:00–13:00', '14:00–16:00', '16:00–18:00', '18:00–20:00', '20:00–22:00'];
+
+const TG = window.Telegram && window.Telegram.WebApp;
+const LIVE = !!(TG && TG.initData);
+if (TG) { try { TG.ready(); TG.expand(); if (TG.colorScheme) document.documentElement.dataset.theme = TG.colorScheme; } catch (e) {} }
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => TzCore.fmt(n);
+function toast(msg, bot) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (bot ? ' bot' : '');
+  t.innerHTML = bot ? '<b>🤖 TuzataMan bot:</b> ' + esc(msg) : esc(msg);
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), bot ? 5200 : 3200);
+}
+function haptic(type) { try { TG && TG.HapticFeedback && TG.HapticFeedback.notificationOccurred(type || 'success'); } catch (e) {} }
+
+/* ===================== Ma'lumot qatlami ===================== */
+let CATALOG = null;
+const EMBED_CATALOG_URL = 'catalog.json';
+
+// Haqiqiy server
+const LiveApi = {
+  async call(method, path, body) {
+    const res = await fetch(API_BASE + path, {
+      method, headers: { 'content-type': 'application/json', 'x-telegram-init-data': TG.initData },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const j = await res.json().catch(() => ({ ok: false, error: 'Server javob bermadi' }));
+    if (!j.ok) throw new Error(j.error || 'Xatolik');
+    return j.data;
+  },
+  me() { return this.call('GET', '/api/me'); },
+  setPhone(phone) { return this.call('POST', '/api/phone', { phone }); },
+  saveAddress(a) { return this.call('POST', '/api/addresses', a); },
+  deleteAddress(id) { return this.call('DELETE', '/api/addresses/' + id); },
+  linkCard(info) { return this.call('POST', '/api/cards', info); },
+  createOrder(p) { return this.call('POST', '/api/orders', p); },
+  orders() { return this.call('GET', '/api/orders'); },
+  cancel(id) { return this.call('POST', '/api/orders/' + id + '/cancel', {}); },
+  confirm(id, rating) { return this.call('POST', '/api/orders/' + id + '/confirm', { rating }); },
+  registerMaster(p) { return this.call('POST', '/api/master/register', p); },
+  masterOrders() { return this.call('GET', '/api/master/orders'); },
+  masterAction(id, act, body) { return this.call('POST', '/api/master/orders/' + id + '/' + act, body || {}); },
+  withdraw(amount) { return this.call('POST', '/api/master/withdraw', { amount }); },
+};
+
+// Demo: Telegram'dan tashqarida ochilganda butun tizim shu brauzer ichida ishlaydi
+// (core.js bilan bir xil qoidalar), bot xabarlari esa ekranda ko'rsatiladi.
+const DemoApi = (() => {
+  const KEY = 'tuzataman-demo-v1';
+  const ME = { id: 1001, first_name: 'Ubaydulloh', username: 'uboltabaev' };
+  const BOT_MASTER = '2002';
+  let db;
+  const pay = {
+    async linkCard(info) {
+      const d = String(info.number || '').replace(/\D/g, '');
+      if (d.length !== 16) return { ok: false, error: 'Karta raqami 16 ta raqam bo\'lishi kerak' };
+      const brand = d.startsWith('9860') ? 'Humo' : 'Uzcard';
+      return { ok: true, token: 'demo', mask: brand + ' •••• ' + d.slice(-4), brand };
+    },
+    async hold() { return { ok: true, holdId: 'H' + Date.now() }; },
+    async capture() { return { ok: true }; }, async release() { return { ok: true }; }, async charge() { return { ok: true }; },
+  };
+  function load() {
+    try { db = JSON.parse(localStorage.getItem(KEY)); } catch (e) { db = null; }
+    if (!db) {
+      db = TzCore.emptyDb();
+      const u = TzCore.ensureUser(db, ME);
+      u.phone = '+998 90 123 45 67'; u.phoneVerified = false;
+      u.cards.push({ id: 'C1', mask: 'Uzcard •••• 4589', brand: 'Uzcard', token: 'demo' });
+      u.addresses.push({ id: 'A1', tag: 'Uy', text: 'Chilonzor-9, 14-uy', district: 'Chilonzor', lat: 41.2856, lng: 69.2035, entrance: '2', floor: '5', apt: '38', intercom: '38K', comment: 'Shlakbaumdan keyin chapdagi 2-podyezd' });
+      TzCore.ensureUser(db, { id: BOT_MASTER, first_name: 'Sardor' });
+      db.masters[BOT_MASTER] = { userId: BOT_MASTER, name: 'Sardor usta (demo)', phone: '+998 93 000 00 00', specialties: CATALOG.categories.map((c) => c.id), districts: [], status: 'active', balance: 60000, jobs: 41, ratingSum: 197, ratingCount: 41 };
+    }
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
+  const texts = {
+    order_offer: 'yangi buyurtma ustalarga yuborildi.',
+    client_status: (o) => o.status === 'accepted' ? `${o.id}: usta yo'lda — ${db.masters[o.masterId].name}` : o.status === 'arrived' ? `${o.id}: usta yetib keldi` : `${o.id}: ${TzCore.STATUS[o.status]}`,
+    client_confirm: (o) => `${o.id}: usta ishni bajardi. Buyurtmalar bo'limida tasdiqlang va baholang.`,
+    master_paid: (o) => `${o.id} yakunlandi. Usta hamyoniga ${fmt(o.total - o.commission)} o'tdi.`,
+    master_approved: 'Usta arizangiz tasdiqlandi, balansingizga 25 000 so\'m bonus qo\'shildi.',
+    withdraw_paid: 'Pul kartangizga o\'tkazildi.',
+  };
+  async function apply(r) {
+    if (!r.ok) throw new Error(r.error);
+    save();
+    for (const n of r.notify || []) {
+      const o = n.orderId && db.orders[n.orderId];
+      const shown = n.to === String(ME.id) || n.type === 'order_offer';
+      const t = texts[n.type];
+      if (shown && t && !(n.type === 'order_offer' && n.to === BOT_MASTER)) toast(typeof t === 'function' ? t(o) : t, true);
+      if (n.to === 'admin' && n.type === 'master_new') setTimeout(() => apply(TzCore.approveMaster(db, CATALOG, n.masterId, 25000)).then(rerender), 2500);
+      if (n.to === 'admin' && n.type === 'withdraw_new') setTimeout(() => apply(TzCore.completeWithdraw(db, n.withdrawId)).then(rerender), 3000);
+      if (n.type === 'order_new') simulateBotMaster(n.orderId);
+    }
+    return r.data;
+  }
+  // Demo usta buyurtmani 8 soniyadan keyin oladi (agar siz o'zingiz usta sifatida olmasangiz)
+  function simulateBotMaster(id) {
+    setTimeout(async () => {
+      if (db.orders[id].status !== 'new') return;
+      await apply(TzCore.acceptOrder(db, CATALOG, BOT_MASTER, id)); rerender();
+      setTimeout(async () => { if (db.orders[id].status !== 'accepted') return; await apply(TzCore.masterArrived(db, BOT_MASTER, id)); rerender();
+        setTimeout(async () => { if (db.orders[id].status !== 'arrived') return; await apply(TzCore.masterDone(db, BOT_MASTER, id, db.orders[id].total ? 0 : 450000)); rerender(); }, 6000);
+      }, 6000);
+    }, 8000);
+  }
+  const uid = () => String(ME.id);
+  return {
+    init() { load(); },
+    async me() {
+      const u = db.users[uid()], m = db.masters[uid()];
+      return { user: u, addresses: u.addresses, cards: u.cards, master: m ? Object.assign({}, m, { rating: m.ratingCount ? +(m.ratingSum / m.ratingCount).toFixed(1) : null }, TzCore.masterWallet(db, CATALOG, uid())) : null };
+    },
+    setPhone(p, verified) { return apply(TzCore.setPhone(db, uid(), p, verified)); },
+    saveAddress(a) { return apply(TzCore.saveAddress(db, uid(), a)); },
+    deleteAddress(id) { return apply(TzCore.deleteAddress(db, uid(), id)); },
+    async linkCard(info) { return apply(await TzCore.linkCard(db, pay, uid(), info)); },
+    async createOrder(p) { return TzCore.publicOrder(db, await apply(await TzCore.createOrder(db, CATALOG, pay, uid(), p))); },
+    async orders() { return Object.values(db.orders).filter((o) => o.clientId === uid()).sort((a, b) => b.createdAt - a.createdAt).map((o) => TzCore.publicOrder(db, o)); },
+    async cancel(id) { return apply(await TzCore.cancelOrder(db, CATALOG, pay, { role: 'client', id: uid() }, id)); },
+    async confirm(id, r) { return apply(await TzCore.clientConfirm(db, CATALOG, pay, uid(), id, r)); },
+    registerMaster(p) { return apply(TzCore.registerMaster(db, uid(), p)); },
+    async masterOrders() {
+      const m = db.masters[uid()];
+      const open = m && m.status === 'active' ? Object.values(db.orders).filter((o) => o.status === 'new' && TzCore.matchingMasters(db, o).some((x) => x.userId === uid())) : [];
+      const mine = Object.values(db.orders).filter((o) => o.masterId === uid()).sort((a, b) => b.createdAt - a.createdAt);
+      return { open: open.map((o) => TzCore.publicOrder(db, o, 'master')), mine: mine.map((o) => TzCore.publicOrder(db, o, 'master')), ledger: db.ledger.filter((l) => l.masterId === uid()).slice(-30).reverse() };
+    },
+    async masterAction(id, act, body) {
+      const r = act === 'accept' ? TzCore.acceptOrder(db, CATALOG, uid(), id)
+        : act === 'arrived' ? TzCore.masterArrived(db, uid(), id)
+        : act === 'done' ? TzCore.masterDone(db, uid(), id, body && body.finalTotal)
+        : await TzCore.cancelOrder(db, CATALOG, pay, { role: 'master', id: uid() }, id);
+      return apply(r);
+    },
+    withdraw(a) { return apply(TzCore.requestWithdraw(db, CATALOG, uid(), a)); },
+    reset() { try { localStorage.removeItem(KEY); } catch (e) {} load(); },
+  };
+})();
+
+const Api = LIVE ? LiveApi : DemoApi;
+
+/* ===================== Holat ===================== */
+const S = {
+  me: null, cart: {}, // serviceId -> qty
+  draft: { address: null, time: { type: 'urgent', day: 'Bugun', slot: '' }, payment: null, comment: '', phone: '' },
+  masterReg: { specialties: [], districts: [] },
+};
+try { const c = JSON.parse(sessionStorage.getItem('tz-cart') || '{}'); if (c && typeof c === 'object') S.cart = c; } catch (e) {}
+function saveCart() { try { sessionStorage.setItem('tz-cart', JSON.stringify(S.cart)); } catch (e) {} }
+
+function cartItems() {
+  return Object.entries(S.cart).filter(([, q]) => q > 0).map(([id, qty]) => { const f = TzCore.findService(CATALOG, id); return f ? { ...f.service, qty, cat: f.category } : null; }).filter(Boolean);
+}
+function cartTotals() {
+  const items = cartItems();
+  const sub = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const urgent = S.draft.time.type === 'urgent' && sub > 0 ? CATALOG.urgentFee : 0;
+  return { items, sub, urgent, total: sub + urgent, count: items.reduce((s, i) => s + i.qty, 0) };
+}
+async function refreshMe() { S.me = await Api.me(); if (!S.draft.phone) S.draft.phone = S.me.user.phone || ''; return S.me; }
+
+/* ===================== Ekranlar ===================== */
+const girih = '<svg class="girih" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3"><path d="M50 5l13 32 32 13-32 13-13 32-13-32L5 50l32-13z"/><path d="M50 22l8 20 20 8-20 8-8 20-8-20-20-8 20-8z"/><circle cx="50" cy="50" r="44"/></g></svg>';
+
+function viewHome() {
+  const demo = LIVE ? '' : `<div class="demo-banner">Bu demo: ilova Telegram'dan tashqarida ochilgan, shuning uchun hamma narsa shu brauzer ichida sinov rejimida ishlaydi. Pul yechilmaydi. Buyurtma bersangiz, demo usta uni 8 soniyada qabul qiladi.</div>`;
+  return `<div class="stack">
+    ${demo}
+    <section class="hero">${girih}
+      <h1>Uyda nima buzildi? Tuzatamiz.</h1>
+      <p>Tekshirilgan ustalar Toshkent bo'ylab 45–60 daqiqada yetib boradi. Narx oldindan aytiladi.</p>
+      <div class="chips"><span>Kafolat 3 kun</span><span>Karta yoki naqd</span><span>Ish ma'qul bo'lsa to'lov</span></div>
+    </section>
+    <div class="row" style="justify-content:space-between"><h2>Qaysi xizmat kerak?</h2></div>
+    <div class="grid">${CATALOG.categories.map((c) => {
+      const min = Math.min(...c.services.map((s) => s.price));
+      return `<button class="cat" data-cat="${c.id}"><span class="ico" aria-hidden="true">${c.icon}</span>${esc(c.name)}<small>${min ? fmt(min).replace(" so'm", '') + ' dan' : 'bepul smeta'}</small></button>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function viewCategory(id) {
+  const c = CATALOG.categories.find((x) => x.id === id);
+  if (!c) return viewHome();
+  return `<button class="back" data-go="#home">‹ Xizmatlar</button>
+  <div class="stack">
+    <div><h1>${c.icon} ${esc(c.name)}</h1><p class="sub">Kerakli ishlarni qo'shing. Narx "dan" boshlanadi, usta joyida aniqlashtiradi.</p></div>
+    <div class="card">${c.services.map((s) => {
+      const q = S.cart[s.id] || 0;
+      return `<div class="svc"><div class="t"><div>${esc(s.name)}</div><div class="p">${s.price ? fmt(s.price) + ' dan' : esc(s.note || 'Smeta asosida')}</div></div>
+        <div class="qty">${q ? `<button data-dec="${s.id}" aria-label="Kamaytirish">−</button><span>${q}</span>` : ''}<button class="add" data-inc="${s.id}" aria-label="Qo'shish">+</button></div></div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function addrSummary(a) {
+  if (!a) return '';
+  const d = [a.entrance && a.entrance + '-podyezd', a.floor && a.floor + '-qavat', a.apt && a.apt + '-xonadon', a.intercom && 'domofon ' + a.intercom].filter(Boolean).join(' · ');
+  return d || 'Podyezd, qavat va xonadon kiritilmagan';
+}
+
+function viewCheckout() {
+  const t = cartTotals();
+  if (!t.items.length) return `<div class="empty"><p>Savat bo'sh.</p><button class="btn brand" data-go="#home">Xizmat tanlash</button></div>`;
+  const d = S.draft, me = S.me;
+  if (!d.address && me.addresses[0]) d.address = { ...me.addresses[0] };
+  if (!d.payment) d.payment = me.cards[0] ? { method: 'card', cardId: me.cards[0].id } : { method: 'cash' };
+  const a = d.address;
+  return `<button class="back" data-go="#home">‹ Xizmatlar</button>
+  <div class="stack">
+    <h1>Buyurtma</h1>
+    <section class="card stack">
+      <span class="label">Tanlangan ishlar</span>
+      ${t.items.map((i) => `<div class="sum-line"><span>${esc(i.name)}${i.qty > 1 ? ' ×' + i.qty : ''}</span><span>${i.price ? fmt(i.price * i.qty) : 'smeta'}</span></div>`).join('')}
+    </section>
+
+    <section class="card stack">
+      <span class="label">Manzil</span>
+      ${me.addresses.length ? `<div class="chips-row">${me.addresses.map((x) => `<button class="chip" data-saved="${x.id}" aria-pressed="${a && a.id === x.id}">${esc(x.tag)}</button>`).join('')}</div>` : ''}
+      <div class="addr-box">
+        <input class="input" id="addrInput" placeholder="Ko'cha, mavze yoki uy raqami" autocomplete="off" value="${esc(a ? a.text : '')}">
+        <div class="suggest" id="suggest" hidden></div>
+      </div>
+      <div class="two">
+        <button class="btn brand small" id="findMe">📍 Meni top</button>
+        <button class="btn ghost small" id="openMap">🗺 Xaritadan</button>
+      </div>
+      ${a ? `<button class="btn ghost small" id="openDetails" style="justify-content:space-between"><span class="addr-details">${esc(addrSummary(a))}</span><span>Detallarni kiritish ›</span></button>` : ''}
+      <div class="field"><label class="label" for="districtSel">Tuman</label>
+        <select class="input" id="districtSel"><option value="">Tumanni tanlang</option>${CATALOG.districts.map((x) => `<option ${a && a.district === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+    </section>
+
+    <section class="card stack">
+      <span class="label">Vaqt</span>
+      <div class="seg" role="group">
+        <button data-time="urgent" aria-pressed="${d.time.type === 'urgent'}">⚡ Shoshilinch<br><small>45–60 daqiqa</small></button>
+        <button data-time="scheduled" aria-pressed="${d.time.type === 'scheduled'}">🕒 Soatni belgilash<br><small>${d.time.type === 'scheduled' && d.time.slot ? esc(d.time.day + ', ' + d.time.slot) : 'kun va soat'}</small></button>
+      </div>
+      ${d.time.type === 'scheduled' ? `
+        <div class="chips-row">${DAYS.map((x) => `<button class="chip" data-day="${x}" aria-pressed="${d.time.day === x}">${x}</button>`).join('')}</div>
+        <div class="chips-row">${SLOTS.map((x) => `<button class="chip" data-slot="${x}" aria-pressed="${d.time.slot === x}">${x}</button>`).join('')}</div>
+        <div class="row"><label for="exactTime" class="note">Yoki aniq soat:</label><input type="time" id="exactTime" class="input" style="width:auto" min="08:00" max="22:00" value="${/^\d\d:\d\d$/.test(d.time.slot) ? d.time.slot : ''}"></div>` : `<p class="note">Shoshilinch chaqiruv uchun +${fmt(CATALOG.urgentFee)}.</p>`}
+    </section>
+
+    <section class="card stack">
+      <span class="label">To'lov</span>
+      ${me.cards.map((c) => `<label class="pay-opt"><input type="radio" name="pay" data-card="${c.id}" ${d.payment.method === 'card' && d.payment.cardId === c.id ? 'checked' : ''}><span style="flex:1;white-space:nowrap">💳 ${esc(c.mask)}</span><small class="note">ish tasdiqlangach yechiladi</small></label>`).join('')}
+      <label class="pay-opt"><input type="radio" name="pay" data-cash="1" ${d.payment.method === 'cash' ? 'checked' : ''}><span style="flex:1">💵 Naqd ustaga</span></label>
+      <button class="btn ghost small" id="addCard">+ Karta ulash (Uzcard / Humo)</button>
+    </section>
+
+    <section class="card stack">
+      <div class="field"><label class="label" for="phoneInput">Telefon</label>
+        <input class="input" id="phoneInput" type="tel" inputmode="tel" value="${esc(d.phone)}" placeholder="+998 90 123 45 67"></div>
+      <div class="field"><label class="label" for="commentInput">Izoh ustaga</label>
+        <textarea class="input" id="commentInput" placeholder="Masalan: oshxonadagi kran tomchilayapti">${esc(d.comment)}</textarea></div>
+    </section>
+
+    <section class="card stack">
+      <div class="sum-line"><span>Ishlar</span><span>${t.sub ? fmt(t.sub) : 'smeta'}</span></div>
+      ${t.urgent ? `<div class="sum-line"><span>Shoshilinch</span><span>${fmt(t.urgent)}</span></div>` : ''}
+      <div class="sum-line total"><span>Jami</span><span>${t.total ? fmt(t.total) : 'smeta asosida'}</span></div>
+      <p class="note">${d.payment.method === 'card' ? 'Summa kartangizda muzlatiladi va faqat ishni tasdiqlaganingizdan keyin yechiladi.' : 'Ish tugagach ustaga to\'laysiz.'}</p>
+      <button class="btn primary block" id="placeOrder">Usta chaqirish</button>
+    </section>
+  </div>`;
+}
+
+function statusPill(o) { return `<span class="status st-${o.status}"><span>${esc(o.statusText)}</span></span>`; }
+
+async function viewOrders() {
+  const list = await Api.orders();
+  if (!list.length) return `<h1>Buyurtmalar</h1><div class="empty"><p>Hali buyurtma yo'q.</p><button class="btn brand" data-go="#home">Usta chaqirish</button></div>`;
+  return `<div class="stack"><h1>Buyurtmalar</h1>${list.map((o) => `
+    <article class="card order">
+      <div class="row" style="justify-content:space-between"><b>${o.id}</b>${statusPill(o)}</div>
+      <div>${o.items.map((i) => esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ')}</div>
+      <div class="note">📍 ${esc(o.addressText)}<br>🕒 ${esc(o.timeText)} · ${o.payment.method === 'card' ? '💳 ' + esc(o.payment.cardMask) : '💵 Naqd'}</div>
+      ${o.master ? `<div class="note">👷 ${esc(o.master.name)}${o.master.rating ? ' · ' + o.master.rating + '⭐' : ''}${o.master.phone ? ' · ' + esc(o.master.phone) : ''}</div>` : ''}
+      <div class="sum-line"><span>Summa</span><b>${o.proposedTotal ? fmt(o.proposedTotal) + ' (usta smetasi)' : o.total ? fmt(o.total) : 'smeta'}</b></div>
+      ${o.status === 'done' ? `<div class="stack"><span class="label">Ishni baholang va tasdiqlang</span>
+        <div class="stars" data-rate-for="${o.id}">${[1, 2, 3, 4, 5].map((r) => `<button data-rate="${r}" aria-pressed="${r === 5}" aria-label="${r} baho">${r}⭐</button>`).join('')}</div>
+        <button class="btn primary" data-confirm="${o.id}">Tasdiqlash${o.payment.method === 'card' ? ' va kartadan to\'lash' : ''}</button>
+        <a class="btn ghost small" href="https://t.me/${SUPPORT}" target="_blank" rel="noopener">⚠️ Muammo bor</a></div>` : ''}
+      ${o.rating ? `<div class="note">Bahoyingiz: ${'⭐'.repeat(o.rating)}</div>` : ''}
+      ${['new', 'accepted', 'arrived'].includes(o.status) ? `<button class="btn ghost small" data-cancel="${o.id}">Bekor qilish</button>` : ''}
+    </article>`).join('')}</div>`;
+}
+
+function viewProfile() {
+  const { user: u, addresses, cards, master } = S.me;
+  const initials = (u.firstName || '?').slice(0, 1).toUpperCase();
+  return `<div class="stack">
+    <section class="card stack">
+      <div class="prof-head"><div class="avatar">${esc(initials)}</div>
+        <div style="min-width:0"><h2>${esc(u.firstName)} ${esc(u.lastName || '')}</h2>
+          <div class="note">${u.phone ? esc(u.phone) : 'Telefon raqami kiritilmagan'}</div>
+          ${u.phoneVerified ? '<div class="verified">✓ Telegram orqali tasdiqlangan</div>' : ''}</div></div>
+      ${u.phoneVerified ? '' : `<button class="btn brand" id="tgPhone">Telegram raqamim bilan kirish</button>`}
+    </section>
+    <div class="quick">
+      <button data-go="#orders"><span>📋</span>Buyurtmalar</button>
+      <a class="quick-a" href="https://t.me/${SUPPORT}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px"><span style="width:50px;height:50px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:21px">💬</span>Yordam</a>
+      <button id="qAddr"><span>🏠</span>Manzillar</button>
+      <button data-go="#master"><span>👷</span>Usta bo'lish</button>
+    </div>
+    <section class="card" id="addrList"><span class="label">Manzillarim</span>
+      ${addresses.length ? addresses.map((a) => `<div class="list-item"><span>📍</span><div class="t"><b>${esc(a.tag)}</b><div class="note">${esc(TzCore.addressLine(a))}</div></div><button class="btn ghost small" data-deladdr="${a.id}" aria-label="O'chirish">✕</button></div>`).join('') : '<p class="note">Buyurtma berganda manzil shu yerga saqlanadi.</p>'}
+    </section>
+    <section class="card"><span class="label">To'lov kartalari</span>
+      ${cards.map((c) => `<div class="list-item"><span>💳</span><div class="t">${esc(c.mask)}</div></div>`).join('')}
+      <div style="padding-top:10px"><button class="btn ghost small" id="addCard">+ Karta ulash</button></div>
+    </section>
+    ${master ? `<button class="btn brand" data-go="#master">👷 Usta kabinetiga o'tish</button>` : ''}
+    ${LIVE ? '' : '<button class="btn ghost small" id="resetDemo">Demo ma\'lumotlarini tozalash</button>'}
+  </div>`;
+}
+
+async function viewMaster() {
+  const m = S.me.master;
+  if (!m) {
+    const r = S.masterReg;
+    return `<div class="stack"><h1>Usta bo'lib ishlash</h1>
+      <p class="sub">Ariza qoldiring. Tasdiqlangach buyurtmalar Telegram'ga keladi. Komissiya ${CATALOG.commissionPercent}%: karta to'lovida avtomatik ushlanadi, naqd ishda balansdan yechiladi. Hisobingizda doim ${fmt(CATALOG.masterReserve)} zaxira qoladi, qolganini istalgan payt kartaga yechasiz.</p>
+      <section class="card stack">
+        <div class="field"><label class="label" for="mName">Ism familiya</label><input class="input" id="mName" value="${esc(S.me.user.firstName)}"></div>
+        <div class="field"><label class="label" for="mPhone">Telefon</label><input class="input" id="mPhone" type="tel" value="${esc(S.me.user.phone)}"></div>
+        <span class="label">Yo'nalishlar</span>
+        <div class="chips-row">${CATALOG.categories.map((c) => `<button class="chip" data-spec="${c.id}" aria-pressed="${r.specialties.includes(c.id)}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>
+        <span class="label">Tumanlar (tanlanmasa — barchasi)</span>
+        <div class="chips-row">${CATALOG.districts.map((d) => `<button class="chip" data-dist="${d}" aria-pressed="${r.districts.includes(d)}">${d}</button>`).join('')}</div>
+        <button class="btn primary" id="mSubmit">Ariza yuborish</button>
+      </section></div>`;
+  }
+  if (m.status === 'pending') return `<div class="stack"><h1>Arizangiz ko'rib chiqilmoqda</h1><p class="sub">Administrator tasdiqlagach shu yerda buyurtmalar paydo bo'ladi va Telegram'ga xabar keladi.</p></div>`;
+  if (m.status === 'blocked') return `<div class="stack"><h1>Hisob faol emas</h1><p class="sub">Batafsil ma'lumot uchun @${SUPPORT} ga yozing.</p></div>`;
+  const data = await Api.masterOrders();
+  const free = m.available - (m.pendingWithdraw || 0);
+  return `<div class="stack">
+    <div class="row" style="justify-content:space-between"><h1>Usta kabineti</h1><span class="note">${m.jobs} ish${m.rating ? ' · ' + m.rating + '⭐' : ''}</span></div>
+    <section class="wallet">
+      <span style="opacity:.85">Balans</span><span class="big">${fmt(m.balance)}</span>
+      <div class="meta"><div>Zaxira (qoladi)<b>${fmt(m.reserve)}</b></div><div>Yechish mumkin<b>${fmt(Math.max(0, free))}</b></div></div>
+      ${m.pendingWithdraw ? `<span style="font-size:13px;opacity:.9;margin-top:6px">So'rov ko'rib chiqilmoqda: ${fmt(m.pendingWithdraw)}</span>` : ''}
+    </section>
+    <section class="card stack">
+      <label class="label" for="wdAmount">Kartaga yechish</label>
+      <div class="row" style="flex-wrap:nowrap"><input class="input" id="wdAmount" type="number" inputmode="numeric" min="10000" step="1000" value="${Math.max(0, free) || ''}" placeholder="Summa"><button class="btn brand" id="wdBtn" ${free < 10000 ? 'disabled' : ''}>Yechish</button></div>
+      <p class="note">Hisobda ${fmt(m.reserve)} doim qoladi, shunda naqd buyurtma olganda balansni to'ldirish shart emas.</p>
+    </section>
+    <h2>Yangi buyurtmalar</h2>
+    ${data.open.length ? data.open.map((o) => `<article class="card order">
+      <div class="row" style="justify-content:space-between"><b>${o.id} · ${esc(o.addressText)}</b><span class="note">${esc(o.timeText)}</span></div>
+      <div>${o.items.map((i) => esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ')}</div>
+      <div class="sum-line"><span>${o.payment.method === 'card' ? '💳 Karta' : '💵 Naqd'} · komissiya ${fmt(o.commission)}</span><b>${o.total ? fmt(o.total) : 'smeta'}</b></div>
+      <button class="btn primary" data-macc="${o.id}">✅ Qabul qilish</button></article>`).join('') : '<p class="note">Hozircha sizning yo\'nalishingizda yangi buyurtma yo\'q. Buyurtma tushsa, Telegram\'ga xabar keladi.</p>'}
+    <h2>Mening ishlarim</h2>
+    ${data.mine.length ? data.mine.map((o) => `<article class="card order">
+      <div class="row" style="justify-content:space-between"><b>${o.id}</b>${statusPill(o)}</div>
+      <div>${o.items.map((i) => esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join(', ')}</div>
+      <div class="note">📍 ${esc(o.addressText)}${o.address && o.address.comment ? '<br>🧭 ' + esc(o.address.comment) : ''}${o.phone ? '<br>📞 ' + esc(o.phone) : ''}</div>
+      ${o.address && o.address.lat ? `<a class="btn ghost small" target="_blank" rel="noopener" href="https://yandex.uz/maps/?pt=${o.address.lng},${o.address.lat}&z=17&l=map">🧭 Xaritada ochish</a>` : ''}
+      ${o.status === 'accepted' ? `<button class="btn brand small" data-mact="arrived" data-id="${o.id}">🚪 Yetib keldim</button>` : ''}
+      ${['accepted', 'arrived'].includes(o.status) ? (o.total === 0
+        ? `<div class="row" style="flex-wrap:nowrap"><input class="input" type="number" inputmode="numeric" id="final-${o.id}" placeholder="Yakuniy narx (smeta)"><button class="btn primary small" data-mact="done" data-id="${o.id}">Yakunlash</button></div>`
+        : `<button class="btn primary small" data-mact="done" data-id="${o.id}">✅ Ish bajarildi</button>`) + `<button class="btn ghost small" data-mact="cancel" data-id="${o.id}">Mijoz bekor qildi</button>` : ''}
+    </article>`).join('') : '<p class="note">Hali qabul qilingan ish yo\'q.</p>'}
+    <h2>Hamyon tarixi</h2>
+    <section class="card ledger">${data.ledger.length ? data.ledger.map((l) => `<div class="list-item"><div class="t">${esc(l.note)}${l.orderId ? ' · ' + l.orderId : ''}<div class="note">${new Date(l.at).toLocaleString('uz-UZ')}</div></div><span class="${l.amount >= 0 ? 'plus' : 'minus'}">${l.amount >= 0 ? '+' : '−'}${fmt(Math.abs(l.amount))}</span></div>`).join('') : '<p class="note">Harakatlar yo\'q.</p>'}</section>
+  </div>`;
+}
+
+/* ===================== Modal oynalar ===================== */
+function sheet(html, onMount) {
+  const bg = document.createElement('div');
+  bg.className = 'sheet-bg';
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grip"></div>${html}</div>`;
+  bg.addEventListener('click', (e) => { if (e.target === bg) bg.remove(); });
+  document.body.appendChild(bg);
+  onMount && onMount(bg, () => bg.remove());
+  return bg;
+}
+
+function openDetails() {
+  const a = S.draft.address || {};
+  sheet(`<div class="stack"><h2>Manzil detallari</h2>
+    <div class="chips-row">${['Uy', 'Ishxona', 'Ota-onam'].map((t) => `<button class="chip" data-tag="${t}" aria-pressed="${(a.tag || 'Uy') === t}">${t}</button>`).join('')}</div>
+    <div class="field"><label class="label" for="dText">Ko'cha va uy</label><input class="input" id="dText" value="${esc(a.text || '')}"></div>
+    <div class="two">
+      <div class="field"><label class="label" for="dEnt">Podyezd</label><input class="input" id="dEnt" inputmode="numeric" value="${esc(a.entrance || '')}"></div>
+      <div class="field"><label class="label" for="dFloor">Qavat</label><input class="input" id="dFloor" inputmode="numeric" value="${esc(a.floor || '')}"></div>
+      <div class="field"><label class="label" for="dApt">Xonadon</label><input class="input" id="dApt" value="${esc(a.apt || '')}"></div>
+      <div class="field"><label class="label" for="dInt">Domofon kodi</label><input class="input" id="dInt" value="${esc(a.intercom || '')}"></div>
+    </div>
+    <div class="field"><label class="label" for="dCom">Ustaga yo'l-yo'riq</label><textarea class="input" id="dCom" placeholder="Masalan: shlakbaumdan keyin chapdagi 2-podyezd">${esc(a.comment || '')}</textarea></div>
+    <label class="row note"><input type="checkbox" id="dSave" checked> Manzilni profilimga saqlash</label>
+    <button class="btn primary" id="dOk">Saqlash</button></div>`, (bg, close) => {
+    let tag = a.tag || 'Uy';
+    bg.addEventListener('click', (e) => { const t = e.target.closest('[data-tag]'); if (t) { tag = t.dataset.tag; bg.querySelectorAll('[data-tag]').forEach((x) => x.setAttribute('aria-pressed', x === t)); } });
+    $('#dOk', bg).onclick = async () => {
+      Object.assign(S.draft.address, { tag, text: $('#dText', bg).value.trim(), entrance: $('#dEnt', bg).value.trim(), floor: $('#dFloor', bg).value.trim(), apt: $('#dApt', bg).value.trim(), intercom: $('#dInt', bg).value.trim(), comment: $('#dCom', bg).value.trim() });
+      if ($('#dSave', bg).checked) {
+        try { const saved = await Api.saveAddress(S.draft.address); S.draft.address.id = saved.id; await refreshMe(); } catch (e) { toast(e.message); }
+      }
+      close(); render();
+    };
+  });
+}
+
+function openCard() {
+  sheet(`<form class="stack" id="cardForm"><h2>Karta ulash</h2>
+    <p class="note">Uzcard yoki Humo. Buyurtmada summa muzlatiladi va faqat ishni tasdiqlaganingizdan keyin yechiladi.${LIVE ? '' : ' Demo rejimda istalgan 16 xonali raqam qabul qilinadi.'}</p>
+    <div class="field"><label class="label" for="cNum">Karta raqami</label><input class="input" id="cNum" inputmode="numeric" autocomplete="cc-number" placeholder="8600 0000 0000 0000" maxlength="19"></div>
+    <div class="field"><label class="label" for="cExp">Amal qilish muddati</label><input class="input" id="cExp" inputmode="numeric" placeholder="OO/YY" maxlength="5"></div>
+    <button class="btn primary" type="submit">Ulash</button></form>`, (bg, close) => {
+    $('#cNum', bg).addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 '); });
+    $('#cardForm', bg).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const r = await Api.linkCard({ number: $('#cNum', bg).value, expiry: $('#cExp', bg).value });
+        if (r.redirectUrl) { TG ? TG.openLink(r.redirectUrl) : (location.href = r.redirectUrl); return; }
+        await refreshMe(); S.draft.payment = { method: 'card', cardId: r.id }; close(); toast('Karta ulandi: ' + r.mask); render();
+      } catch (err) { toast(err.message); }
+    });
+  });
+}
+
+/* ===================== Geolokatsiya va xarita ===================== */
+// Nominatim (OpenStreetMap). Ko'p foydalanuvchida Yandex Geocoder yoki 2GIS kalitiga o'tish kerak.
+async function reverseGeocode(lat, lng) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=uz`);
+    const j = await r.json();
+    const ad = j.address || {};
+    const street = [ad.road || ad.pedestrian || ad.neighbourhood || ad.residential || ad.quarter, ad.house_number].filter(Boolean).join(', ');
+    const area = ad.suburb || ad.city_district || ad.quarter || '';
+    const text = [street, area].filter(Boolean).join(', ') || j.display_name || '';
+    return { text, district: matchDistrict([ad.city_district, ad.suburb, ad.county, j.display_name].join(' ')) };
+  } catch (e) {
+    return { text: `Belgilangan nuqta (${lat.toFixed(5)}, ${lng.toFixed(5)})`, district: '' };
+  }
+}
+function matchDistrict(s) {
+  s = String(s || '').toLowerCase().replace(/[‘’ʻʼ`']/g, '');
+  const alias = { 'mirzo ulugbek': "Mirzo Ulug'bek", 'мирзо': "Mirzo Ulug'bek", 'чилонзор': 'Chilonzor', 'чиланзар': 'Chilonzor', 'юнусобод': 'Yunusobod', 'юнусабад': 'Yunusobod', 'сергел': 'Sergeli', 'яккасарой': 'Yakkasaroy', 'яккасарай': 'Yakkasaroy', 'яшнобод': 'Yashnobod', 'яшнабад': 'Yashnobod', 'учтеп': 'Uchtepa', 'олмазор': 'Olmazor', 'алмазар': 'Olmazor', 'шайхонтоҳур': 'Shayxontohur', 'шайхантахур': 'Shayxontohur', 'миробод': 'Mirobod', 'мирабад': 'Mirobod', 'бектемир': 'Bektemir', 'янгиҳаёт': 'Yangihayot', 'янгихаят': 'Yangihayot' };
+  for (const d of CATALOG.districts) if (s.includes(d.toLowerCase().replace(/'/g, ''))) return d;
+  for (const k in alias) if (s.includes(k)) return alias[k];
+  return '';
+}
+async function searchAddress(q) {
+  const local = CATALOG.districts.filter((d) => d.toLowerCase().startsWith(q.toLowerCase())).map((d) => ({ text: d + ' tumani', district: d, sub: 'Tuman' }));
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&accept-language=uz&countrycodes=uz&viewbox=69.10,41.45,69.47,41.18&bounded=1&q=${encodeURIComponent(q)}`);
+    const j = await r.json();
+    return local.concat(j.map((x) => {
+      const ad = x.address || {};
+      const main = [ad.road || ad.neighbourhood || ad.residential || x.name, ad.house_number].filter(Boolean).join(', ') || x.display_name.split(',')[0];
+      return { text: main, sub: [ad.suburb || ad.city_district, 'Toshkent'].filter(Boolean).join(', '), lat: +x.lat, lng: +x.lon, district: matchDistrict(x.display_name) };
+    })).slice(0, 7);
+  } catch (e) { return local; }
+}
+
+// Telegram'ning o'z joylashuv xizmati (Bot API 8.0+), bo'lmasa brauzer GPS'i
+function getPosition() {
+  return new Promise((resolve, reject) => {
+    const LM = TG && TG.LocationManager;
+    if (LM && TG.isVersionAtLeast && TG.isVersionAtLeast('8.0')) {
+      LM.init(() => {
+        if (!LM.isLocationAvailable) return browserGeo(resolve, reject);
+        LM.getLocation((loc) => {
+          if (loc) return resolve({ lat: loc.latitude, lng: loc.longitude, acc: loc.horizontal_accuracy || null });
+          if (LM.isAccessRequested && !LM.isAccessGranted) { toast('Joylashuvga ruxsat bering'); LM.openSettings(); }
+          reject(new Error('denied'));
+        });
+      });
+      return;
+    }
+    browserGeo(resolve, reject);
+  });
+}
+function browserGeo(resolve, reject) {
+  if (!navigator.geolocation) return reject(new Error('unsupported'));
+  navigator.geolocation.getCurrentPosition(
+    (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+    (e) => reject(e), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+async function findMe(btn) {
+  const old = btn && btn.textContent;
+  if (btn) { btn.disabled = true; btn.textContent = 'Aniqlanmoqda…'; }
+  try {
+    const p = await getPosition();
+    const g = await reverseGeocode(p.lat, p.lng);
+    setAddress({ text: g.text, district: g.district, lat: p.lat, lng: p.lng });
+    // Aniqlik past bo'lsa (Wi‑Fi yoki IP bo'yicha), xaritani ochib pinni to'g'rilashni so'raymiz
+    if (p.acc && p.acc > 150) { toast(`Joylashuv taxminiy (±${Math.round(p.acc)} m). Xaritada pinni uyingizga suring.`); openMap(p); }
+    else render();
+  } catch (e) {
+    toast('Joylashuvni aniqlab bo\'lmadi. Xaritada uyingizni belgilang.');
+    openMap();
+  } finally { if (btn) { btn.disabled = false; btn.textContent = old; } }
+}
+
+function setAddress(a) {
+  const prev = S.draft.address && !S.draft.address.id ? S.draft.address : {};
+  S.draft.address = Object.assign({ tag: 'Uy' }, prev, a, { id: undefined });
+}
+
+function openMap(start) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mapwrap';
+  wrap.innerHTML = `<div style="position:relative;flex:1;display:flex"><div id="map"></div>
+    <svg class="pin" id="pin" width="38" height="50" viewBox="0 0 38 50" aria-hidden="true"><path d="M19 1C9 1 1 9 1 19c0 13 18 30 18 30s18-17 18-30C37 9 29 1 19 1z" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="2"/><circle cx="19" cy="19" r="6.5" fill="var(--surface)"/></svg>
+    <button class="btn small map-top" id="mapClose">‹ Orqaga</button>
+    <button class="map-me" id="mapMe" aria-label="Meni top">📍</button></div>
+    <div class="map-bottom"><span class="label">Usta shu nuqtaga keladi</span><b id="mapAddr">Xaritani suring…</b>
+      <button class="btn primary" id="mapOk">Shu manzilni tasdiqlash</button></div>`;
+  document.body.appendChild(wrap);
+  const close = () => { wrap.remove(); render(); };
+  $('#mapClose', wrap).onclick = close;
+  const a0 = start || S.draft.address || {};
+  const center = a0.lat ? [a0.lat, a0.lng] : TASHKENT;
+  let cur = { lat: center[0], lng: center[1], text: '', district: '' };
+  if (!window.L) { $('#mapAddr', wrap).textContent = 'Xarita yuklanmadi. Manzilni qo\'lda yozing.'; return; }
+  const map = L.map($('#map', wrap), { zoomControl: false, attributionControl: true }).setView(center, a0.lat ? 17 : 12);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+  let timer;
+  const pin = $('#pin', wrap);
+  map.on('movestart', () => pin.classList.add('lift'));
+  map.on('moveend', () => {
+    pin.classList.remove('lift');
+    const c = map.getCenter();
+    cur = { lat: c.lat, lng: c.lng };
+    $('#mapAddr', wrap).textContent = 'Aniqlanmoqda…';
+    clearTimeout(timer);
+    timer = setTimeout(async () => { const g = await reverseGeocode(c.lat, c.lng); Object.assign(cur, g); $('#mapAddr', wrap).textContent = g.text; }, 450);
+  });
+  map.fire('moveend');
+  $('#mapMe', wrap).onclick = async () => {
+    try { const p = await getPosition(); map.setView([p.lat, p.lng], 18); }
+    catch (e) { toast('Joylashuvga ruxsat berilmagan. Pinni qo\'lda suring.'); }
+  };
+  $('#mapOk', wrap).onclick = () => { setAddress(cur); close(); };
+}
+
+/* ===================== Render va hodisalar ===================== */
+let renderSeq = 0;
+async function render() {
+  const seq = ++renderSeq;
+  const hash = location.hash.replace('#', '') || 'home';
+  const [route, arg] = hash.split('-');
+  let html;
+  try {
+    if (!S.me) await refreshMe();
+    if (route === 'cat') html = viewCategory(arg);
+    else if (route === 'checkout') html = viewCheckout();
+    else if (route === 'orders') html = await viewOrders();
+    else if (route === 'profile') html = viewProfile();
+    else if (route === 'master') { await refreshMe(); html = await viewMaster(); }
+    else html = viewHome();
+  } catch (e) { html = `<div class="empty"><p>${esc(e.message)}</p><button class="btn brand" onclick="location.reload()">Qayta urinish</button></div>`; }
+  if (seq !== renderSeq) return;
+  const keepScroll = window.scrollY;
+  $('#view').innerHTML = html;
+  if (route === 'orders' || route === 'master') window.scrollTo(0, keepScroll);
+  document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === (route === 'cat' || route === 'checkout' ? 'home' : route) ? 'page' : 'false'));
+  const t = cartTotals();
+  const bar = route === 'home' || route === 'cat';
+  $('#cartbar').hidden = !(bar && t.count);
+  if (t.count) { $('#cartCount').textContent = `${t.count} ta xizmat · Davom etish`; $('#cartSum').textContent = t.sub ? fmt(t.sub) : 'smeta'; }
+  if (route === 'checkout') bindCheckout();
+}
+function rerender() { const h = location.hash; if (h === '#orders' || h === '#master' || h === '#profile') { refreshMe().then(render); } }
+window.addEventListener('hashchange', () => { window.scrollTo(0, 0); render(); });
+
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('button, [data-go]');
+  if (!el) return;
+  const d = el.dataset;
+  if (d.go) { location.hash = d.go; return; }
+  if (d.cat) { location.hash = '#cat-' + d.cat; return; }
+  if (d.inc) { S.cart[d.inc] = (S.cart[d.inc] || 0) + 1; saveCart(); haptic(); render(); return; }
+  if (d.dec) { S.cart[d.dec] = Math.max(0, (S.cart[d.dec] || 0) - 1); saveCart(); render(); return; }
+  if (el.id === 'cartBtn') { location.hash = '#checkout'; return; }
+  if (el.id === 'profBtn' || el.id === 'qAddr') { location.hash = '#profile'; if (el.id === 'qAddr') setTimeout(() => $('#addrList') && $('#addrList').scrollIntoView({ behavior: 'smooth' }), 60); return; }
+  if (el.id === 'addCard') { openCard(); return; }
+  if (el.id === 'resetDemo') { DemoApi.reset(); S.me = null; S.cart = {}; saveCart(); S.draft.address = null; S.draft.payment = null; toast('Demo tozalandi'); location.hash = '#home'; render(); return; }
+  if (el.id === 'tgPhone') { requestPhone(); return; }
+  if (d.deladdr) { await Api.deleteAddress(d.deladdr); await refreshMe(); render(); return; }
+  if (d.cancel) { try { await Api.cancel(d.cancel); toast('Buyurtma bekor qilindi'); render(); } catch (err) { toast(err.message); } return; }
+  if (d.rate) { const box = el.parentElement; box.querySelectorAll('[data-rate]').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.rate <= +d.rate)); box.dataset.value = d.rate; return; }
+  if (d.confirm) {
+    const box = document.querySelector(`[data-rate-for="${d.confirm}"]`);
+    try { await Api.confirm(d.confirm, parseInt((box && box.dataset.value) || '5', 10)); haptic(); toast('Rahmat! Buyurtma yakunlandi'); render(); } catch (err) { toast(err.message); }
+    return;
+  }
+  // Usta
+  if (d.spec) { toggle(S.masterReg.specialties, d.spec); el.setAttribute('aria-pressed', S.masterReg.specialties.includes(d.spec)); return; }
+  if (d.dist) { toggle(S.masterReg.districts, d.dist); el.setAttribute('aria-pressed', S.masterReg.districts.includes(d.dist)); return; }
+  if (el.id === 'mSubmit') {
+    try { await Api.registerMaster({ name: $('#mName').value.trim(), phone: $('#mPhone').value.trim(), specialties: S.masterReg.specialties, districts: S.masterReg.districts }); toast('Ariza yuborildi'); await refreshMe(); render(); } catch (err) { toast(err.message); }
+    return;
+  }
+  if (el.id === 'wdBtn') {
+    try { await Api.withdraw(parseInt($('#wdAmount').value, 10)); toast('So\'rov yuborildi. Pul kartangizga o\'tkaziladi'); await refreshMe(); render(); } catch (err) { toast(err.message); }
+    return;
+  }
+  if (d.macc) { try { await Api.masterAction(d.macc, 'accept'); haptic(); toast('Buyurtma sizniki! Manzil ochildi'); await refreshMe(); render(); } catch (err) { toast(err.message); } return; }
+  if (d.mact) {
+    const body = d.mact === 'done' && $('#final-' + d.id) ? { finalTotal: parseInt($('#final-' + d.id).value, 10) } : {};
+    if (d.mact === 'done' && $('#final-' + d.id) && !(body.finalTotal > 0)) { toast('Yakuniy narxni kiriting'); return; }
+    try { await Api.masterAction(d.id, d.mact, body); toast(d.mact === 'done' ? 'Mijozga tasdiqlash uchun yuborildi' : 'Saqlandi'); await refreshMe(); render(); } catch (err) { toast(err.message); }
+  }
+});
+function toggle(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
+
+function requestPhone() {
+  if (LIVE && TG.requestContact) {
+    // Telegram raqamni botga yuboradi, server uni "tasdiqlangan" deb saqlaydi
+    TG.requestContact(async (shared) => {
+      if (!shared) return toast('Raqam yuborilmadi');
+      for (let i = 0; i < 6; i++) { await new Promise((r) => setTimeout(r, 800)); await refreshMe(); if (S.me.user.phoneVerified) break; }
+      S.draft.phone = S.me.user.phone; toast('Raqam tasdiqlandi'); render();
+    });
+  } else {
+    DemoApi.setPhone('+998901234567', true).then(async () => { await refreshMe(); S.draft.phone = S.me.user.phone; toast('Demo: raqam Telegram orqali tasdiqlandi'); render(); });
+  }
+}
+
+function bindCheckout() {
+  const d = S.draft;
+  const input = $('#addrInput'), box = $('#suggest');
+  let t, results = [];
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    setAddress({ text: q, lat: null, lng: null });
+    clearTimeout(t);
+    if (q.length < 3) { box.hidden = true; return; }
+    t = setTimeout(async () => {
+      results = await searchAddress(q);
+      if (input.value.trim() !== q) return;
+      box.innerHTML = results.map((r, i) => `<button type="button" data-sug="${i}">${esc(r.text)}<small>${esc(r.sub || '')}</small></button>`).join('');
+      box.hidden = !results.length;
+    }, 450);
+  });
+  input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 200));
+  box.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sug]'); if (!b) return;
+    const r = results[+b.dataset.sug];
+    setAddress({ text: r.text + (r.sub && !r.sub.startsWith('Tuman') ? ', ' + r.sub.replace(', Toshkent', '') : ''), lat: r.lat || null, lng: r.lng || null, district: r.district || (d.address && d.address.district) || '' });
+    render();
+    if (!r.lat) setTimeout(() => $('#addrInput') && $('#addrInput').focus(), 50);
+  });
+  $('#findMe').onclick = (e) => findMe(e.currentTarget);
+  $('#openMap').onclick = () => openMap();
+  const det = $('#openDetails'); if (det) det.onclick = openDetails;
+  $('#districtSel').onchange = (e) => { if (!d.address) setAddress({ text: '' }); d.address.district = e.target.value; };
+  document.querySelectorAll('[data-saved]').forEach((b) => b.onclick = () => { d.address = { ...S.me.addresses.find((x) => x.id === b.dataset.saved) }; render(); });
+  document.querySelectorAll('[data-time]').forEach((b) => b.onclick = () => { d.time.type = b.dataset.time; render(); });
+  document.querySelectorAll('[data-day]').forEach((b) => b.onclick = () => { d.time.day = b.dataset.day; render(); });
+  document.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => { d.time.slot = b.dataset.slot; render(); });
+  const ex = $('#exactTime'); if (ex) ex.onchange = () => { d.time.slot = ex.value; render(); };
+  document.querySelectorAll('input[name="pay"]').forEach((r) => r.onchange = () => { d.payment = r.dataset.cash ? { method: 'cash' } : { method: 'card', cardId: r.dataset.card }; render(); });
+  $('#phoneInput').oninput = (e) => { d.phone = e.target.value; };
+  $('#commentInput').oninput = (e) => { d.comment = e.target.value; };
+  $('#placeOrder').onclick = placeOrder;
+}
+
+async function placeOrder() {
+  const d = S.draft, btn = $('#placeOrder');
+  if (!d.address || !d.address.text) return toast('Manzilni kiriting yoki "Meni top" tugmasini bosing');
+  if (!d.address.district) return toast('Tumanni tanlang, shunda yaqin usta topiladi');
+  if (d.time.type === 'scheduled' && !d.time.slot) return toast('Kun va soatni tanlang');
+  if (!d.phone || d.phone.replace(/\D/g, '').length < 9) return toast('Telefon raqamini kiriting');
+  btn.disabled = true; btn.textContent = 'Yuborilmoqda…';
+  try {
+    if (d.phone !== S.me.user.phone) await Api.setPhone(d.phone);
+    // Yangi manzilni profilga avtomatik saqlaymiz, keyingi safar bir bosishda tanlanadi
+    if (!d.address.id) { const saved = await Api.saveAddress(d.address); d.address.id = saved.id; }
+    const o = await Api.createOrder({
+      items: cartItems().map((i) => ({ serviceId: i.id, qty: i.qty })),
+      address: d.address, time: d.time, payment: d.payment, phone: d.phone, comment: d.comment,
+    });
+    S.cart = {}; saveCart(); d.comment = '';
+    await refreshMe();
+    haptic(); toast(`Buyurtma ${o.id} qabul qilindi. Usta qidirilmoqda`);
+    location.hash = '#orders';
+  } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = 'Usta chaqirish'; }
+}
+
+/* ===================== Ishga tushirish ===================== */
+(async function boot() {
+  try {
+    const r = await fetch(EMBED_CATALOG_URL); CATALOG = await r.json();
+  } catch (e) { $('#view').innerHTML = '<div class="empty">Katalog yuklanmadi. Internetni tekshiring.</div>'; return; }
+  if (!LIVE) { DemoApi.init(); $('#modePill').hidden = false; }
+  if (TG && TG.BackButton) {
+    TG.BackButton.onClick(() => history.back());
+    window.addEventListener('hashchange', () => { const h = location.hash; h && h !== '#home' ? TG.BackButton.show() : TG.BackButton.hide(); });
+  }
+  // Kanaldagi "Usta bo'lib ishlash" tugmasi ilovani usta bo'limida ochadi
+  const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param;
+  if (sp === 'master' || sp === 'orders') location.hash = '#' + sp;
+  render();
+  // Buyurtma holati o'zgarsa ko'rinib turishi uchun ochiq ekranni har 15 soniyada yangilaymiz
+  if (LIVE) setInterval(rerender, 15000);
+})();
+</script>

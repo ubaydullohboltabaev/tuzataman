@@ -1,0 +1,9 @@
+{
+  "name": "tuzataman-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TuzataMan: Telegram bot + Mini App API",
+  "main": "index.js",
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node index.js" }
+}

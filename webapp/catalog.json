@@ -1,0 +1,47 @@
+{
+  "commissionPercent": 20,
+  "masterReserve": 25000,
+  "urgentFee": 20000,
+  "districts": ["Bektemir","Chilonzor","Mirobod","Mirzo Ulug'bek","Olmazor","Sergeli","Shayxontohur","Uchtepa","Yakkasaroy","Yangihayot","Yashnobod","Yunusobod"],
+  "categories": [
+    {"id":"plumbing","name":"Santexnika","icon":"🚰","services":[
+      {"id":"pl_tap","name":"Kran / smesitel almashtirish","price":80000},
+      {"id":"pl_shower","name":"Dush o'rnatish yoki ta'mirlash","price":90000},
+      {"id":"pl_leak","name":"Quvur oqishini to'xtatish","price":100000},
+      {"id":"pl_toilet","name":"Unitaz o'rnatish","price":150000},
+      {"id":"pl_sink","name":"Rakovina o'rnatish","price":150000},
+      {"id":"pl_bath","name":"Vanna o'rnatish","price":200000},
+      {"id":"pl_filter","name":"Suv filtri o'rnatish","price":100000},
+      {"id":"pl_clog","name":"Tiqilib qolgan quvurni tozalash","price":100000}
+    ]},
+    {"id":"electric","name":"Elektr","icon":"💡","services":[
+      {"id":"el_bulb","name":"Lampochka / patron almashtirish","price":50000},
+      {"id":"el_socket","name":"Rozetka yoki vklyuchatel almashtirish","price":50000},
+      {"id":"el_chandelier","name":"Lyustra o'rnatish","price":80000},
+      {"id":"el_short","name":"Qisqa tutashuvni topish va tuzatish","price":100000},
+      {"id":"el_breaker","name":"Avtomat almashtirish","price":80000},
+      {"id":"el_wiring","name":"Yangi simlar tortish (1 nuqta)","price":120000}
+    ]},
+    {"id":"furniture","name":"Mebel","icon":"🪑","services":[
+      {"id":"fu_assemble","name":"Mebel yig'ish (1 dona)","price":100000},
+      {"id":"fu_shelf","name":"Polka / javon ilish","price":60000},
+      {"id":"fu_door","name":"Shkaf eshigini sozlash","price":50000},
+      {"id":"fu_tv","name":"Televizorni devorga ilish","price":100000}
+    ]},
+    {"id":"appliance","name":"Maishiy texnika","icon":"🧺","services":[
+      {"id":"ap_washer","name":"Kir yuvish mashinasini ulash","price":100000},
+      {"id":"ap_dish","name":"Idish yuvish mashinasini ulash","price":120000},
+      {"id":"ap_heater","name":"Suv isitgich (kolonka) o'rnatish","price":150000},
+      {"id":"ap_ac","name":"Konditsioner tozalash","price":150000}
+    ]},
+    {"id":"small","name":"Mayda ta'mir","icon":"🔨","services":[
+      {"id":"sm_lock","name":"Eshik qulfini almashtirish","price":70000},
+      {"id":"sm_cornice","name":"Korniz ilish","price":70000},
+      {"id":"sm_picture","name":"Rasm / oyna ilish","price":50000},
+      {"id":"sm_door","name":"Eshikni sozlash","price":70000}
+    ]},
+    {"id":"renovation","name":"To'liq ta'mir","icon":"🏠","services":[
+      {"id":"re_estimate","name":"Usta chaqirish va bepul smeta","price":0,"note":"Narx smeta asosida, bosqichma-bosqich to'lov"}
+    ]}
+  ]
+}

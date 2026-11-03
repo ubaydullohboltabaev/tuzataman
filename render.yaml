@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: tuzataman
+    runtime: node
+    plan: starter
+    rootDir: server
+    buildCommand: "echo ok"
+    startCommand: node index.js
+    healthCheckPath: /health
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: BOT_USERNAME
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: CHANNEL
+        value: "@tuzataman_uz"
+      - key: WEBHOOK
+        value: "1"
+      - key: PAYMENTS
+        value: mock
+      - key: DB_FILE
+        value: /var/data/db.json
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
