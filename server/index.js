@@ -23,6 +23,7 @@ const CFG = {
   channel: process.env.CHANNEL || '@tuzataman_uz',
   botUsername: (process.env.BOT_USERNAME || '').replace(/^@/, ''),
   webhook: process.env.WEBHOOK === '1',
+  storage: process.env.STORAGE || 'file',
   dbFile: process.env.DB_FILE || path.join(__dirname, 'data', 'db.json'),
 };
 const WEBAPP_DIR = path.join(__dirname, '..', 'webapp');
@@ -46,6 +47,59 @@ function save() {
   const tmp = CFG.dbFile + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db));
   fs.renameSync(tmp, CFG.dbFile);
+  if (CFG.storage === 'telegram') scheduleBackup();
+}
+
+/*
+ * STORAGE=telegram: bepul hostingda disk saqlanmaydi, shuning uchun bot bazani
+ * admin bilan chatdagi qadalgan fayl sifatida saqlaydi va ishga tushganda o'shandan o'qiydi.
+ * Baza bir necha MB bo'lguncha (minglab buyurtma) bemalol yetadi.
+ */
+const BACKUP_NAME = 'tuzataman-db.json';
+let backupMsgId = null, backupTimer = null, backupBusy = false, backupAgain = false;
+function scheduleBackup() {
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(uploadBackup, 3000);
+}
+async function uploadBackup() {
+  if (!CFG.token || !CFG.adminId) return;
+  if (backupBusy) { backupAgain = true; return; }
+  backupBusy = true;
+  try {
+    const form = new FormData();
+    const file = new Blob([JSON.stringify(db)], { type: 'application/json' });
+    if (backupMsgId) {
+      form.append('chat_id', CFG.adminId);
+      form.append('message_id', String(backupMsgId));
+      form.append('media', JSON.stringify({ type: 'document', media: 'attach://f', caption: 'TuzataMan bazasi. O\'chirmang va qadashdan olmang.' }));
+      form.append('f', file, BACKUP_NAME);
+      const r = await (await fetch(`https://api.telegram.org/bot${CFG.token}/editMessageMedia`, { method: 'POST', body: form })).json();
+      if (!r.ok && !/not modified/.test(r.description || '')) { console.error('backup edit', r.description); backupMsgId = null; }
+    }
+    if (!backupMsgId) {
+      const f2 = new FormData();
+      f2.append('chat_id', CFG.adminId);
+      f2.append('caption', 'TuzataMan bazasi. O\'chirmang va qadashdan olmang.');
+      f2.append('disable_notification', 'true');
+      f2.append('document', file, BACKUP_NAME);
+      const r = await (await fetch(`https://api.telegram.org/bot${CFG.token}/sendDocument`, { method: 'POST', body: f2 })).json();
+      if (r.ok) { backupMsgId = r.result.message_id; await tg('pinChatMessage', { chat_id: CFG.adminId, message_id: backupMsgId, disable_notification: true }); }
+      else console.error('backup send', r.description);
+    }
+  } catch (e) { console.error('backup', e.message); }
+  backupBusy = false;
+  if (backupAgain) { backupAgain = false; scheduleBackup(); }
+}
+async function loadBackup() {
+  if (!CFG.token || !CFG.adminId) return;
+  try {
+    const chat = await tg('getChat', { chat_id: CFG.adminId });
+    const pm = chat && chat.pinned_message;
+    if (!pm || !pm.document || pm.document.file_name !== BACKUP_NAME) { console.log('Telegram bazasi topilmadi, yangi baza'); return; }
+    const f = await tg('getFile', { file_id: pm.document.file_id });
+    const data = await (await fetch(`https://api.telegram.org/file/bot${CFG.token}/${f.file_path}`)).json();
+    if (data && data.users) { db = data; backupMsgId = pm.message_id; save(); console.log('Baza Telegram\'dan tiklandi:', Object.keys(db.orders).length, 'buyurtma'); }
+  } catch (e) { console.error('loadBackup', e.message); }
 }
 // O'zgartiruvchi amallar navbat bilan bajariladi (ikki usta bir buyurtmani bir vaqtda ololmaydi)
 let queue = Promise.resolve();
@@ -397,8 +451,12 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-if (require.main === module) {
+if (require.main === module) (async () => {
+  // Baza tiklanmaguncha so'rov qabul qilmaymiz, aks holda bo'sh baza ustiga yozilib ketadi
+  if (CFG.storage === 'telegram') await loadBackup();
   server.listen(CFG.port, () => console.log(`TuzataMan server: http://localhost:${CFG.port}  (to'lov: ${payments.name}${CFG.dev ? ', DEV_MODE' : ''})`));
   if (CFG.token) setupBot(); else console.log('BOT_TOKEN yo\'q — bot o\'chiq, faqat API ishlaydi');
-}
+  const flush = async () => { if (CFG.storage === 'telegram' && backupTimer) { clearTimeout(backupTimer); await uploadBackup(); } process.exit(0); };
+  process.on('SIGTERM', flush); process.on('SIGINT', flush);
+})();
 module.exports = { server, validateInitData, CFG };

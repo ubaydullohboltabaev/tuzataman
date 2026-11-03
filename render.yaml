@@ -2,7 +2,7 @@ services:
   - type: web
     name: tuzataman
     runtime: node
-    plan: starter
+    plan: free
     rootDir: server
     buildCommand: "echo ok"
     startCommand: node index.js
@@ -20,11 +20,7 @@ services:
         value: "@tuzataman_uz"
       - key: WEBHOOK
         value: "1"
+      - key: STORAGE
+        value: telegram
       - key: PAYMENTS
         value: mock
-      - key: DB_FILE
-        value: /var/data/db.json
-    disk:
-      name: data
-      mountPath: /var/data
-      sizeGB: 1

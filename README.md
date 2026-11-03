@@ -47,7 +47,9 @@ Buyruqlar: `/stats`, `/ustalar`, `/topup USTA_ID SUMMA` (usta naqd pul tashlab b
    - `ADMIN_ID` — @userinfobot ko'rsatgan raqamingiz
    - `BOT_USERNAME` — botning username'i, @ belgisisiz
    - `WEBAPP_URL` — Render bergan manzil, masalan `https://tuzataman.onrender.com/` (birinchi deploydan keyin ko'rinadi, keyin qo'shib "Manual Deploy" bosing)
-   - Tarif: Starter (oyiga ~7$) — ma'lumotlar diskda saqlanadi. Bepul tarifda server qayta ishga tushganda buyurtma va balanslar o'chadi, shuning uchun faqat sinash uchun.
+   - Tarif: bepul. Bepul serverda disk saqlanmaydi, shuning uchun bot bazani siz bilan chatda qadalgan `tuzataman-db.json` fayl qilib saqlaydi va qayta yonganda o'shandan tiklaydi. **Bu faylni o'chirmang va qadashdan olmang.** Server 15 daqiqa ishlatilmasa uxlaydi, keyingi ochilish 30–50 soniya oladi.
+   - Muhim: deploydan oldin botga o'zingiz `/start` yozing, aks holda bot sizga baza faylini yubora olmaydi.
+   - Keyinchalik pullik tarifga o'tish: `plan: starter`, disk qo'shing, `STORAGE=file`, `DB_FILE=/var/data/db.json`.
 3. **@BotFather.** `/mybots` → bot → Bot Settings → Configure Mini App → Enable → `WEBAPP_URL`. Shundan keyin `t.me/BOT?startapp` havolasi ilovani to'g'ridan-to'g'ri ochadi.
 4. **Kanal.** `@tuzataman_uz` → Administratorlar → botni qo'shing ("Xabar yuborish" va "Xabarni qadash" ruxsati). Botga `/kanal` yozing: tugmali post kanalga joylanadi va qadaladi.
 5. **Sinov.** Botga `/start` → "Usta chaqirish". Ikkinchi akkauntdan "Usta bo'lib ishlash", o'zingiz tasdiqlang, buyurtma bering.
