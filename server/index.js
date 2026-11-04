@@ -285,6 +285,7 @@ async function onMessage(msg) {
     const w = core.masterWallet(db, catalog, uid);
     return send(uid, `💼 Balans: <b>${core.fmt(w.balance)}</b>\n🔒 Zaxira: ${core.fmt(w.reserve)}\n💸 Yechish mumkin: ${core.fmt(w.available)}`);
   }
+  if (text === '/id') return send(uid, `Sizning Telegram ID: <code>${uid}</code>${isAdmin(uid) ? '\n✅ Siz admin sifatida tanilgansiz.' : '\n⚠️ Admin emassiz. Render → Environment → ADMIN_ID ga shu raqamni yozing.'}`);
   if (!isAdmin(uid)) return send(uid, 'Buyurtma berish yoki holatni ko\'rish uchun ilovani oching.', CFG.webappUrl ? kb([[appBtn('Ilovani ochish')]]) : undefined);
 
   // ----- Admin buyruqlari -----
